@@ -12,9 +12,9 @@ public class Tomasulo {
 
     Queue<Instruction> ins_queue;
     Register[] registers = new Register[16];
-    ReservedStation[] stations = new ReservedStation[3+2+3+3];
-        // add*3 multi*2 load*3 store*3
+    static int num_a=3, num_m=2, num_l=3, num_s=3;
     static int base_a=0, base_m=3, base_l=5, base_s=8;
+    ReservedStation[] stations = new ReservedStation[num_a+num_m+num_l+num_s];
 
     byte[] mem = new byte[4096];
     int clock = 0;
@@ -35,13 +35,15 @@ public class Tomasulo {
             info("Error in reading ins from file");
             return;
         }
+        setMem(); // for testing
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         while(br.readLine().length()==0){
             clock ++;
             info(clock);
             // fetch ins
-
-
+            Instruction next_ins = ins_queue.peek();
+            int station_id = checkResStations(next_ins); // return -1 if no empty station
+            //
             // update alu infomation. if finished, inform those waiting
 
             // update UI
@@ -98,6 +100,34 @@ public class Tomasulo {
         }
         return true;
     }
+    private void setMem(){
+        mem[0] = 10;
+        mem[4] = 6;
+        mem[16] = 8;
+    }
+    private int checkResStations(Instruction next_ins) {
+        if (next_ins.ins.equals(add) || next_ins.ins.equals(sub)) {
+            return tryResStation(base_a, num_a, next_ins);
+        } else if (next_ins.ins.equals(multi) || next_ins.ins.equals(div)) {
+            return tryResStation(base_m, num_m, next_ins);
+        } else if (next_ins.ins.equals(load)) {
+            return tryResStation(base_l, num_l, next_ins);
+        } else if (next_ins.ins.equals(store)) {
+            return tryResStation(base_s, num_s, next_ins);
+        } else {
+            return -1;
+        }
+    }
+    private int tryResStation(int base, int num, Instruction next_ins){
+        for(int i=base; i<(base+num); i++){
+            if(stations[i].ins.equals("")){
+                // empty
+                stations[i].addIns(next_ins);
+                return i;
+            }
+        }
+        return -1;
+    }
 }
 
 class Instruction{
@@ -126,7 +156,7 @@ class Register{
     }
 }
 class ReservedStation{
-    int circle_left;
+    int circle_left, circle_total_need;
     String ins; // "" if empty
     int r1, r2; // subscript of reserved station if data is not ready, or else -1
     float v1, v2; // data if data is valid
@@ -140,5 +170,12 @@ class ReservedStation{
         is_busy = false;
         reg_waited = new Vector<Integer>();
         res_sta_waited = new Vector<Integer>();
+    }
+    public void addIns(Instruction instruction){
+        this.ins = instruction.ins;
+        /* TODO */
+        // check if data need is ready.
+        // if ready, set v
+        // else set r and register in station!
     }
 }
