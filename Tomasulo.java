@@ -1,6 +1,7 @@
 /**
  * Created by lixiaohan on 2017/6/3.
  */
+import javax.sound.sampled.ReverbType;
 import java.math.*;
 import java.io.*;
 import java.util.*;
@@ -8,18 +9,17 @@ import java.util.*;
 
 public class Tomasulo {
 
-    static String add="ADDD", sub="SUBD", multi="MULTD", div="DIVD", load="LD", store="ST";
+    static public String add="ADDD", sub="SUBD", multi="MULTD", div="DIVD", load="LD", store="ST";
 
-    Queue<Instruction> ins_queue;
-    Register[] registers = new Register[16];
-    static int num_a=3, num_m=2, num_l=3, num_s=3;
-    static int base_a=0, base_m=3, base_l=5, base_s=8;
-    ReservedStation[] stations = new ReservedStation[num_a+num_m+num_l+num_s];
+    public Queue<Instruction> ins_queue;
+    public Register[] registers = new Register[16];
+    static public int num_a=3, num_m=2, num_l=3, num_s=3;
+    static public int base_a=0, base_m=3, base_l=5, base_s=8;
+    public ReservedStation[] stations = new ReservedStation[num_a+num_m+num_l+num_s];
 
-    byte[] mem = new byte[4096];
-    int clock = 0;
-    int add_alu_exec=-1, multi_alu_exec=-1; // id of reserved station which holds the ins executed now
-    int load_exec=-1, store_exec=-1;
+    public float[] mem = new float[4096];
+    public int clock = 0;
+    public int[] alu_exec = {-1, -1, -1, -1}; // a, m, l, s
 
     public static void main(String[] agrs)
     throws Exception
@@ -40,12 +40,16 @@ public class Tomasulo {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         while(br.readLine().length()==0){
             clock ++;
-            info(clock);
+            info("clock: " + String.valueOf(clock));
             // fetch ins
             Instruction next_ins = ins_queue.peek();
             int station_id = checkResStations(next_ins); // return -1 if no empty station
+            info(station_id);
             // update alu infomation. if finished, inform those waiting
-
+            updateALU(base_a, num_a, 0);
+            updateALU(base_m, num_m, 1);
+            updateALU(base_l, num_l, 2);
+            updateALU(base_s, num_s, 3);
             // update UI
         }
     }
@@ -84,10 +88,18 @@ public class Tomasulo {
                     Instruction instruction = new Instruction(ins[0], dst, op1, op2);
                     ins_queue.offer(instruction);
                 }
-                else if(ins[0].equals(load) || ins[0].equals(store)){
+                else if(ins[0].equals(load) ){
                     int reg = Integer.parseInt(ops[0].replace("F", ""));
                     int addr = Integer.parseInt(ops[1]);
-                    Instruction instruction = new Instruction(ins[0], reg, addr);
+                    Instruction instruction = new Instruction(ins[0], reg, 0, 0);
+                    instruction.addr = addr;
+                    ins_queue.offer(instruction);
+                }
+                else if(ins[0].equals(store)){
+                    int src_reg = Integer.parseInt(ops[0].replace("F", ""));
+                    int addr = Integer.parseInt(ops[1]);
+                    Instruction instruction = new Instruction(ins[0], 0, src_reg, 0);
+                    instruction.addr = addr;
                     ins_queue.offer(instruction);
                 }
                 else {
@@ -107,25 +119,33 @@ public class Tomasulo {
     }
     private int checkResStations(Instruction next_ins) {
         if (next_ins.ins.equals(add) || next_ins.ins.equals(sub)) {
-            return tryResStation(base_a, num_a, next_ins);
+            return tryResStation(base_a, num_a);
         } else if (next_ins.ins.equals(multi) || next_ins.ins.equals(div)) {
-            return tryResStation(base_m, num_m, next_ins);
+            return tryResStation(base_m, num_m);
         } else if (next_ins.ins.equals(load)) {
             if(hasAddrInMemBuffer(next_ins.addr))
                 return -1;
-            return tryResStation(base_l, num_l, next_ins);
+            return tryResStation(base_l, num_l);
         } else if (next_ins.ins.equals(store)) {
             if(hasAddrInMemBuffer(next_ins.addr))
                 return -1;
-            return tryResStation(base_s, num_s, next_ins);
+            return tryResStation(base_s, num_s);
         } else {
             return -1;
         }
     }
-    private int tryResStation(int base, int num, Instruction next_ins){
+    private boolean hasAddrInMemBuffer(int addr){
+        for(int i=base_l; i<base_l+num_l+num_s; i++){
+            if(!stations[i].ins.equals("") && (addr == stations[i].addr))
+                return true;
+        }
+        return false;
+    }
+    private int tryResStation(int base, int num){
         for(int i=base; i<(base+num); i++){
             if(stations[i].ins.equals("")){
                 // empty
+                Instruction next_ins = ins_queue.poll();
                 addIns(i, next_ins);
                 return i;
             }
@@ -140,9 +160,10 @@ public class Tomasulo {
             // set waiting and register
             registers[instruction.dst_reg_id].res_sta_id = rs;
             stations[rs].reg_waited.add(instruction.dst_reg_id);
+            stations[rs].is_busy = false;
         }
         else if(stations[rs].ins.equals(store)){
-            int src_reg = instruction.dst_reg_id;
+            int src_reg = instruction.op1_reg_id;
             // ins in res_sta[rs] needs data from reg[src_reg]
             // check if data need is ready.
             // if ready, set v
@@ -150,6 +171,7 @@ public class Tomasulo {
             if(registers[src_reg].res_sta_id == -1){
                 stations[rs].v1 = registers[src_reg].data;
                 stations[rs].r1 = -1;
+                stations[rs].is_busy = false;
             }else{
                 stations[rs].r1 = registers[src_reg].res_sta_id;
                 stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
@@ -181,6 +203,8 @@ public class Tomasulo {
                 stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
                 stations[rs].is_busy = true;
             }
+            if(stations[rs].r1+stations[rs].r2 == -2)
+                stations[rs].is_busy = false;
         }
         setTotalCircle(rs);
     }
@@ -194,17 +218,81 @@ public class Tomasulo {
         }
         else rs.circle_total_need = 40;
     }
-    private void updateALU(int curr_exec, int base, int num){
+    private void updateALU(int base, int num, int alu_index){
+        int curr_exec = alu_exec[alu_index];
         if(curr_exec != -1){
+            stations[curr_exec].circle_left -= 1;
 
+            if(stations[curr_exec].circle_left==0){
+                // alu finished
+                // inform who need result
+                float res = operation(stations[curr_exec]);
+                inform(res, curr_exec);
+                // update variable
+                stations[curr_exec].ins = "";
+                stations[curr_exec].is_busy = false;
+                // now alu is available
+                startNewWork(base, num, alu_index);
+            }
+        }
+        else{
+            // alu is available
+            startNewWork(base, num, alu_index);
         }
     }
-    private boolean hasAddrInMemBuffer(int addr){
-        for(int i=base_l; i<base_l+num_l+num_s; i++){
-            if(addr == stations[i].addr)
-                return true;
+    private float operation(ReservedStation rs) {
+        if (rs.ins.equals(add)) {
+            return rs.v1+rs.v2;
+        } else if (rs.ins.equals(sub)) {
+            return rs.v1-rs.v2;
+        } else if (rs.ins.equals(multi)) {
+            return rs.v1*rs.v2;
+        } else if (rs.ins.equals(div)) {
+            return rs.v1/rs.v2;
+        } else if (rs.ins.equals(load)) {
+            return mem[rs.addr];
+        } else if (rs.ins.equals(store)) {
+            mem[rs.addr] = rs.v1;
+            return 0;
+        } else {
+            return -1;
         }
-        return false;
+    }
+    private void inform(float res, int rs_index){
+        // stations[rs_index] has a result res
+        ReservedStation rs = stations[rs_index];
+        for(Integer i : rs.reg_waited){
+            registers[i].data = res;
+            registers[i].res_sta_id = -1;
+        }
+        for(Integer i : rs.res_sta_waited){
+            if(stations[i].r1 == rs_index){
+                stations[i].v1 = res;
+                stations[i].r1 = -1;
+            }
+            if(stations[i].r2 == rs_index){
+                stations[i].v2 = res;
+                stations[i].r2 = -1;
+            }
+            if(stations[i].r1+stations[i].r2==-2){
+                stations[i].is_busy = false;
+            }
+        }
+    }
+    private void startNewWork(int base, int num, int alu_index){
+        for(int i=base; i<base+num; i++){
+            ReservedStation rs = stations[i];
+            if(!rs.ins.equals("") && !rs.is_busy){
+                // can be executed
+                rs.is_busy = true;
+                rs.circle_left = rs.circle_total_need;
+                alu_exec[alu_index] = i;
+                return;
+            }
+        }
+        // no ins executed
+        alu_exec[alu_index] = -1;
+        return;
     }
 }
 
@@ -219,11 +307,7 @@ class Instruction{
         this.op1_reg_id = op1;
         this.op2_reg_id = op2;
     }
-    public Instruction(String i, int reg, int addr){
-        this.ins = i;
-        this.dst_reg_id = reg;
-        this.addr = addr;
-    }
+
 }
 class Register{
     public int res_sta_id; // subscript of reserved station if data is not ready, or else -1
@@ -242,14 +326,14 @@ class ReservedStation{
     // only r1 and v1 are used if load||store ins
     boolean is_busy;
     int addr; // for load&store ins
-    Vector reg_waited;
-    Vector res_sta_waited;
+    Vector<Integer> reg_waited;
+    Vector<Integer> res_sta_waited;
     public ReservedStation(){
         ins = "";
         circle_left = 0;
         is_busy = false;
-        reg_waited = new Vector<Integer>();
-        res_sta_waited = new Vector<Integer>();
+        reg_waited = new Vector();
+        res_sta_waited = new Vector();
     }
 
 }
