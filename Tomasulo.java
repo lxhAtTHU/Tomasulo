@@ -144,6 +144,7 @@ public class Tomasulo {
             // else set r and register in station and set is_busy
             if(registers[src_reg].res_sta_id == -1){
                 stations[rs].v1 = registers[src_reg].data;
+                stations[rs].r1 = -1;
             }else{
                 stations[rs].r1 = registers[src_reg].res_sta_id;
                 stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
@@ -159,6 +160,7 @@ public class Tomasulo {
             int src_reg = instruction.op1_reg_id;
             if(registers[src_reg].res_sta_id == -1){
                 stations[rs].v1 = registers[src_reg].data;
+                stations[rs].r1 = -1;
             }else{
                 stations[rs].r1 = registers[src_reg].res_sta_id;
                 stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
@@ -168,6 +170,7 @@ public class Tomasulo {
             src_reg = instruction.op2_reg_id;
             if(registers[src_reg].res_sta_id == -1){
                 stations[rs].v2 = registers[src_reg].data;
+                stations[rs].r2 = -1;
             }else{
                 stations[rs].r2 = registers[src_reg].res_sta_id;
                 stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
