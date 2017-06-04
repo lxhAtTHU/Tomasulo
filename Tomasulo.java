@@ -51,6 +51,10 @@ public class Tomasulo {
             updateALU(base_m, num_m, 1);
             updateALU(base_l, num_l, 2);
             updateALU(base_s, num_s, 3);
+            startNewWork(base_a, num_a, 0);
+            startNewWork(base_m, num_m, 1);
+            startNewWork(base_l, num_l, 2);
+            startNewWork(base_s, num_s, 3);
             info();
             // update UI
         }
@@ -256,13 +260,8 @@ public class Tomasulo {
                 // update variable
                 stations[curr_exec].ins = "";
                 stations[curr_exec].is_busy = false;
-                // now alu is available
-                startNewWork(base, num, alu_index);
+                alu_exec[alu_index] = -1;
             }
-        }
-        else{
-            // alu is available
-            startNewWork(base, num, alu_index);
         }
     }
     private float operation(ReservedStation rs) {
@@ -312,6 +311,8 @@ public class Tomasulo {
         }
     }
     private void startNewWork(int base, int num, int alu_index){
+        if(alu_exec[alu_index] != -1)
+            return;
         for(int i=base; i<base+num; i++){
             ReservedStation rs = stations[i];
             if(!rs.ins.equals("") && !rs.is_busy){
