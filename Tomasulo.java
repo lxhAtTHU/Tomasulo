@@ -43,7 +43,6 @@ public class Tomasulo {
             // fetch ins
             Instruction next_ins = ins_queue.peek();
             int station_id = checkResStations(next_ins); // return -1 if no empty station
-            //
             // update alu infomation. if finished, inform those waiting
 
             // update UI
@@ -122,15 +121,75 @@ public class Tomasulo {
         for(int i=base; i<(base+num); i++){
             if(stations[i].ins.equals("")){
                 // empty
-                stations[i].addIns(next_ins);
+                addIns(i, next_ins);
                 return i;
             }
         }
         return -1;
     }
+    public void addIns(int rs, Instruction instruction){
+        stations[rs].ins = instruction.ins;
+        stations[rs].addr = instruction.addr;
+
+        if(stations[rs].ins.equals(load)){
+            // set waiting and register
+            registers[instruction.dst_reg_id].res_sta_id = rs;
+            stations[rs].reg_waited.add(instruction.dst_reg_id);
+        }
+        else if(stations[rs].ins.equals(store)){
+            int src_reg = instruction.dst_reg_id;
+            // ins in res_sta[rs] needs data from reg[src_reg]
+            // check if data need is ready.
+            // if ready, set v
+            // else set r and register in station and set is_busy
+            if(registers[src_reg].res_sta_id == -1){
+                stations[rs].v1 = registers[src_reg].data;
+            }else{
+                stations[rs].r1 = registers[src_reg].res_sta_id;
+                stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
+                stations[rs].is_busy = true;
+            }
+        }
+        else{
+            // three ops
+            // set dst reg waiting and register
+            registers[instruction.dst_reg_id].res_sta_id = rs;
+            stations[rs].reg_waited.add(instruction.dst_reg_id);
+            // check if waiting for data from reg
+            int src_reg = instruction.op1_reg_id;
+            if(registers[src_reg].res_sta_id == -1){
+                stations[rs].v1 = registers[src_reg].data;
+            }else{
+                stations[rs].r1 = registers[src_reg].res_sta_id;
+                stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
+                stations[rs].is_busy = true;
+            }
+
+            src_reg = instruction.op2_reg_id;
+            if(registers[src_reg].res_sta_id == -1){
+                stations[rs].v2 = registers[src_reg].data;
+            }else{
+                stations[rs].r2 = registers[src_reg].res_sta_id;
+                stations[registers[src_reg].res_sta_id].res_sta_waited.add(rs);
+                stations[rs].is_busy = true;
+            }
+        }
+        setTotalCircle(rs);
+    }
+    private void setTotalCircle(int id){
+        ReservedStation rs = stations[id];
+        if(rs.ins.equals(add) || rs.ins.equals(sub) || rs.equals(load) || rs.equals(store)){
+            rs.circle_total_need = 2;
+        }
+        else if(rs.ins.equals(multi)){
+            rs.circle_total_need = 10;
+        }
+        else rs.circle_total_need = 40;
+    }
 }
 
 class Instruction{
+    static public String add="ADDD", sub="SUBD", multi="MULTD", div="DIVD", load="LD", store="ST";
     public String ins;
     public int dst_reg_id, op1_reg_id, op2_reg_id;
     public int addr;
@@ -160,6 +219,7 @@ class ReservedStation{
     String ins; // "" if empty
     int r1, r2; // subscript of reserved station if data is not ready, or else -1
     float v1, v2; // data if data is valid
+    // only r1 and v1 are used if load||store ins
     boolean is_busy;
     int addr; // for load&store ins
     Vector reg_waited;
@@ -171,11 +231,5 @@ class ReservedStation{
         reg_waited = new Vector<Integer>();
         res_sta_waited = new Vector<Integer>();
     }
-    public void addIns(Instruction instruction){
-        this.ins = instruction.ins;
-        /* TODO */
-        // check if data need is ready.
-        // if ready, set v
-        // else set r and register in station!
-    }
+
 }
