@@ -43,8 +43,10 @@ public class Tomasulo {
             info("clock: " + String.valueOf(clock));
             // fetch ins
             Instruction next_ins = ins_queue.peek();
-            int station_id = checkResStations(next_ins); // return -1 if no empty station
-            info(station_id);
+            int station_id;
+            if(next_ins != null)
+                station_id = checkResStations(next_ins); // return -1 if no empty station
+            info();
             // update alu infomation. if finished, inform those waiting
             updateALU(base_a, num_a, 0);
             updateALU(base_m, num_m, 1);
@@ -62,6 +64,28 @@ public class Tomasulo {
     private void info(int x){
         // encapsulate print function
         System.out.println(x);
+    }
+    private void info(float x){
+        // encapsulate print function
+        System.out.println(x);
+    }
+    private void info(){
+        // registers
+        for(int i=0; i<registers.length; i++){
+            String x = String.valueOf(i)+": "
+                    + String.valueOf(registers[i].res_sta_id) +" "
+                    + String.valueOf(registers[i].data);
+            info(x);
+        }
+        // reserved stations
+        for(int i=0; i<stations.length; i++){
+            String x = String.valueOf(i)+": "
+                    + String.valueOf(stations[i].is_busy)+" "
+                    + String.valueOf(stations[i].ins) +" "
+                    + String.valueOf(stations[i].circle_left) +" "
+                    + String.valueOf(stations[i].circle_total_need);
+            info(x);
+        }
     }
     private void init(){
         ins_queue = new LinkedList<>();
@@ -210,7 +234,7 @@ public class Tomasulo {
     }
     private void setTotalCircle(int id){
         ReservedStation rs = stations[id];
-        if(rs.ins.equals(add) || rs.ins.equals(sub) || rs.equals(load) || rs.equals(store)){
+        if(rs.ins.equals(add) || rs.ins.equals(sub) || rs.ins.equals(load) || rs.ins.equals(store)){
             rs.circle_total_need = 2;
         }
         else if(rs.ins.equals(multi)){
@@ -262,8 +286,10 @@ public class Tomasulo {
         // stations[rs_index] has a result res
         ReservedStation rs = stations[rs_index];
         for(Integer i : rs.reg_waited){
-            registers[i].data = res;
-            registers[i].res_sta_id = -1;
+            if(registers[i].res_sta_id == rs_index){
+                registers[i].data = res;
+                registers[i].res_sta_id = -1;
+            }
         }
         for(Integer i : rs.res_sta_waited){
             if(stations[i].r1 == rs_index){
@@ -274,7 +300,12 @@ public class Tomasulo {
                 stations[i].v2 = res;
                 stations[i].r2 = -1;
             }
-            if(stations[i].r1+stations[i].r2==-2){
+            if(stations[i].ins.equals(store)){
+                if(stations[i].r1==-1){
+                    stations[i].is_busy = false;
+                }
+            }
+             else if(stations[i].r1+stations[i].r2==-2){
                 stations[i].is_busy = false;
             }
         }
