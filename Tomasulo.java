@@ -46,12 +46,12 @@ public class Tomasulo {
             int station_id;
             if(next_ins != null)
                 station_id = checkResStations(next_ins); // return -1 if no empty station
-            info();
             // update alu infomation. if finished, inform those waiting
             updateALU(base_a, num_a, 0);
             updateALU(base_m, num_m, 1);
             updateALU(base_l, num_l, 2);
             updateALU(base_s, num_s, 3);
+            info();
             // update UI
         }
     }
@@ -247,7 +247,8 @@ public class Tomasulo {
         if(curr_exec != -1){
             stations[curr_exec].circle_left -= 1;
 
-            if(stations[curr_exec].circle_left==0){
+            if(stations[curr_exec].circle_left == -1){
+                // not 0 because 1 circle is needed for writing back
                 // alu finished
                 // inform who need result
                 float res = operation(stations[curr_exec]);
