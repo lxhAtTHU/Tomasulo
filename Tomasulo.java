@@ -19,6 +19,7 @@ public class Tomasulo {
     byte[] mem = new byte[4096];
     int clock = 0;
     int add_alu_exec=-1, multi_alu_exec=-1; // id of reserved station which holds the ins executed now
+    int load_exec=-1, store_exec=-1;
 
     public static void main(String[] agrs)
     throws Exception
@@ -110,8 +111,12 @@ public class Tomasulo {
         } else if (next_ins.ins.equals(multi) || next_ins.ins.equals(div)) {
             return tryResStation(base_m, num_m, next_ins);
         } else if (next_ins.ins.equals(load)) {
+            if(hasAddrInMemBuffer(next_ins.addr))
+                return -1;
             return tryResStation(base_l, num_l, next_ins);
         } else if (next_ins.ins.equals(store)) {
+            if(hasAddrInMemBuffer(next_ins.addr))
+                return -1;
             return tryResStation(base_s, num_s, next_ins);
         } else {
             return -1;
@@ -188,6 +193,18 @@ public class Tomasulo {
             rs.circle_total_need = 10;
         }
         else rs.circle_total_need = 40;
+    }
+    private void updateALU(int curr_exec, int base, int num){
+        if(curr_exec != -1){
+
+        }
+    }
+    private boolean hasAddrInMemBuffer(int addr){
+        for(int i=base_l; i<base_l+num_l+num_s; i++){
+            if(addr == stations[i].addr)
+                return true;
+        }
+        return false;
     }
 }
 
