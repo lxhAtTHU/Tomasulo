@@ -1,0 +1,28 @@
+#clock-bar {
+    -fx-box-border: transparent;
+    -fx-background-insets: 0;
+}
+
+#clock-bar > .bar {
+    -fx-padding: 2px;
+    -fx-background-insets: 0;
+    -fx-background-color: dodgerblue;
+}
+
+#clock-bar > .track {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-background-color: transparent;
+}
+
+#menuHBox, MenuBar, MenuBar .context-menu {
+    -fx-background-color: #3C3F41;
+}
+
+MenuBar .label {
+    -fx-text-fill: #C9C9C9;
+}
+
+#mainVBox {
+    -fx-background-color: #2B2B2B;
+}
