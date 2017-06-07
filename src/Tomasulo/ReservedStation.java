@@ -7,7 +7,7 @@ import java.util.*;
  * Updated by dotkrnl on 6/8/17
  */
 public class ReservedStation {
-    public Instruction.Operation operation = Instruction.Operation.EMPTY;
+    public Instruction instruction = null;
 
     public int staId = 0;
     public int r1 = -2, r2 = -2;
@@ -21,7 +21,7 @@ public class ReservedStation {
     public Vector<Integer> regWaited = new Vector();
     public Vector<Integer> resStaWaited = new Vector();
 
-    public int circleLeft = -1, circleTotalNeed = 0;
+    public int circleLeft = -1;
 
     public ReservedStation(int idx) {
         staId = idx;
@@ -32,12 +32,12 @@ public class ReservedStation {
     }
 
     public String getOperation() {
-        if (operation == Instruction.Operation.EMPTY) return "";
-        else return operation.toString();
+        if (instruction == null) return "";
+        else return instruction.operation.toString();
     }
 
     public String getBusy() {
-        if (operation == Instruction.Operation.EMPTY) return "";
+        if (instruction == null) return "";
         else return isBusy ? "忙" : "可用";
     }
 
@@ -61,19 +61,19 @@ public class ReservedStation {
     }
 
     public String getCircleLeft() {
-        if (operation == Instruction.Operation.EMPTY) return "";
+        if (instruction == null) return "";
         else if (circleLeft == -1) return "初";
         else return String.valueOf(circleLeft);
     }
 
     public String getCircleTotalNeed() {
-        if (operation == Instruction.Operation.EMPTY) return "";
-        else return String.valueOf(circleTotalNeed);
+        if (instruction == null) return "";
+        else return String.valueOf(instruction.getCycle());
     }
 
     @Override
     public String toString() {
-        if (operation == Instruction.Operation.EMPTY) {
+        if (instruction == null) {
             return getStationId() + ": " + getOperation();
         } else {
             return getStationId() + ": " + getOperation() + " " +

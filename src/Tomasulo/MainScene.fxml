@@ -26,19 +26,22 @@
         <Button mnemonicParsing="false" text="下一步" onAction="#step"
                 minWidth="80.0"/>
     </HBox>
-    <ProgressBar id="clock-bar" prefHeight="2.0" prefWidth="1000" progress="0.43" />
+    <ProgressBar fx:id="clockBar" id="clock-bar" prefHeight="2.0"
+                 prefWidth="1000"
+                 progress="0" />
    <HBox fx:id="mainHBox" alignment="TOP_RIGHT" prefHeight="676.0" spacing="10.0">
       <children>
          <VBox prefHeight="676.0" prefWidth="326.0" spacing="10.0">
              <children>
-                 <TableView id="ins-table" editable="true" prefHeight="1304.0" prefWidth="326.0">
+                 <TableView fx:id="instructionTable" id="ins-table"
+                            editable="true"
+                            prefHeight="1304.0" prefWidth="326.0">
                      <columns>
                          <TableColumn id="ins-table-name" text="指令" />
                          <TableColumn id="ins-table-dest" text="目的" />
-                         <TableColumn id="ins-table-source-j" text="源 J " />
-                         <TableColumn id="ins-table-source-k" text="源 K" />
+                         <TableColumn id="ins-table-source" text="源" />
                          <TableColumn id="ins-table-emit" text="发射" />
-                         <TableColumn id="ins-table-done" text="完毕" />
+                         <TableColumn id="ins-table-done" text="执行" />
                          <TableColumn id="ins-table-back" text="写回" />
                      </columns>
                      <columnResizePolicy>
@@ -86,6 +89,8 @@
                      <columns>
                          <TableColumn text="序号" />
                          <TableColumn id="load-table-busy" text="忙" />
+                         <TableColumn text="剩余" />
+                         <TableColumn text="总周期" />
                          <TableColumn id="load-table-addr" text="地址" />
                          <TableColumn id="load-table-cache" text="Cache" />
                      </columns>
@@ -98,6 +103,8 @@
                      <columns>
                          <TableColumn text="序号" />
                          <TableColumn id="store-table-busy" text="忙" />
+                         <TableColumn text="剩余" />
+                         <TableColumn text="总周期" />
                          <TableColumn id="store-table-addr" text="地址" />
                          <TableColumn id="store-table-qi" text="源" />
                      </columns>

@@ -13,11 +13,15 @@ public class Instruction {
         LD, ST
     };
 
-    public Operation operation;
+    public Operation operation = Operation.EMPTY;
 
-    public int dstRegId;
-    public int op1RegId, op2RegId;
-    public int addr;
+    public int dstRegId = -1;
+    public int op1RegId = -1, op2RegId = -1;
+    public int addr = -1;
+
+    public boolean emit = false;
+    public boolean done = false;
+    public boolean writeback = false;
 
     public Instruction(String op) {
         initialize(Operation.valueOf(op.toUpperCase()));
@@ -29,6 +33,33 @@ public class Instruction {
 
     public void initialize(Operation op) {
         this.operation = op;
+    }
+
+    public String getOperation() {
+        if (operation == Operation.EMPTY) return "";
+        else return operation.toString();
+    }
+
+    public String getDestination() {
+        if (operation == Operation.ST) return "@" + String.valueOf(addr);
+        else return String.valueOf(dstRegId);
+    }
+
+    public String getSource() {
+        if (operation == Operation.LD) return "@" + String.valueOf(addr);
+        else return String.valueOf(op1RegId) + ", " + String.valueOf(op2RegId);
+    }
+
+    public String getEmit() {
+        return emit ? ">" : "";
+    }
+
+    public String getDone() {
+        return done ? ">" : "";
+    }
+
+    public String getWriteBack() {
+        return writeback ? ">" : "";
     }
 
     public int getCycle() {
@@ -72,5 +103,25 @@ public class Instruction {
                 op2RegId = 0;
                 addr = 0;
         }
+    }
+
+    @Override
+    public String toString() {
+        return getOperation() + " " +
+                getDestination() + " <- " + getSource() +
+                " [" + getEmit() + getDone() + getWriteBack() +  "]";
+    }
+
+    @Override
+    protected Instruction clone() {
+        Instruction cloned = new Instruction(operation);
+        cloned.dstRegId = dstRegId;
+        cloned.op1RegId = op1RegId;
+        cloned.op2RegId = op2RegId;
+        cloned.addr = addr;
+        cloned.emit = emit;
+        cloned.done = done;
+        cloned.writeback = writeback;
+        return cloned;
     }
 }

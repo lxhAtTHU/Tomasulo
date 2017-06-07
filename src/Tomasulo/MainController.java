@@ -13,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.event.*;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 /**
@@ -22,7 +23,9 @@ import java.util.ResourceBundle;
 public class MainController implements Initializable {
 
     @FXML private HBox mainHBox;
+    @FXML private ProgressBar clockBar;
 
+    @FXML private TableView instructionTable;
     @FXML private TableView addStationTable;
     @FXML private TableView mulStationTable;
     @FXML private TableView loadStationTable;
@@ -30,7 +33,9 @@ public class MainController implements Initializable {
     @FXML private TableView registersTable;
     @FXML private TableView memoryTable;
 
-    public RuntimeModel model = new RuntimeModel();
+    private RuntimeModel model = null;
+    private int totalSteps = -1;
+    private ArrayList<Instruction> instructions = new ArrayList<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -42,13 +47,21 @@ public class MainController implements Initializable {
         } catch (IOException err) {
             System.err.println("I/O failed!");
         }
-        setMem();
+        start();
+    }
 
+    public void start() {
+        model = new RuntimeModel();
+        model.addInstructions(instructions);
+        totalSteps = guessStep();
+
+        setMem(); // TODO: read from memory file
         bindData();
         update();
     }
 
     private void bindData() {
+        bindInstructionTable();
         bindALUStations(addStationTable,
                 RuntimeModel.BASE_ADD_STATION,
                 RuntimeModel.BASE_MUL_STATION);
@@ -65,28 +78,17 @@ public class MainController implements Initializable {
         bindMemory();
     }
 
+    private void bindInstructionTable() {
+        String[] fields = {"operation", "destination", "source",
+                "emit", "done", "writeBack"};
+        bindTable(fields, instructionTable);
+        instructionTable.setItems(model.instructions);
+    }
+
     private void bindALUStations(TableView table, int begin, int end) {
-        TableColumn staId = (TableColumn)table.getColumns().get(0);
-        TableColumn op = (TableColumn)table.getColumns().get(1);
-        TableColumn busy = (TableColumn)table.getColumns().get(2);
-        TableColumn leftC = (TableColumn)table.getColumns().get(3);
-        TableColumn totC = (TableColumn)table.getColumns().get(4);
-        TableColumn v1 = (TableColumn)table.getColumns().get(5);
-        TableColumn v2 = (TableColumn)table.getColumns().get(6);
-        staId.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("stationId"));
-        op.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("operation"));
-        busy.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("busy"));
-        leftC.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("circleLeft"));
-        totC.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("circleTotalNeed"));
-        v1.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("value1"));
-        v2.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("value2"));
+        String[] fields = {"stationId", "operation", "busy",
+                "circleLeft", "circleTotalNeed", "value1", "value2"};
+        bindTable(fields, table);
         FilteredList<ReservedStation> filteredData =
                 new FilteredList<>(model.stations,
                         p -> p.staId >= begin && p.staId < end);
@@ -95,18 +97,9 @@ public class MainController implements Initializable {
 
 
     private void bindMemoryStations(TableView table, int begin, int end) {
-        TableColumn staId = (TableColumn)table.getColumns().get(0);
-        TableColumn busy = (TableColumn)table.getColumns().get(1);
-        TableColumn address = (TableColumn)table.getColumns().get(2);
-        TableColumn v1 = (TableColumn)table.getColumns().get(3);
-        staId.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("stationId"));
-        busy.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("busy"));
-        address.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("address"));
-        v1.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("value1"));
+        String[] fields = {"stationId", "busy", "circleLeft", "circleTotalNeed",
+                "address", "value1"};
+        bindTable(fields, table);
         FilteredList<ReservedStation> filteredData =
                 new FilteredList<>(model.stations,
                         p -> p.staId >= begin && p.staId < end);
@@ -114,25 +107,15 @@ public class MainController implements Initializable {
     }
 
     private void bindRegisters() {
-        TableColumn regId = (TableColumn)registersTable.getColumns().get(0);
-        TableColumn staId = (TableColumn)registersTable.getColumns().get(1);
-        TableColumn data = (TableColumn)registersTable.getColumns().get(2);
-        regId.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("registerID"));
-        staId.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("stationID"));
-        data.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("data"));
+        String[] fields = {"registerID", "stationID", "data"};
+        bindTable(fields, registersTable);
         registersTable.setItems(model.registers);
     }
 
     private void bindMemory() {
-        TableColumn addresss = (TableColumn)memoryTable.getColumns().get(0);
+        String[] fields = {"address", "data"};
         TableColumn data = (TableColumn)memoryTable.getColumns().get(1);
-        addresss.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("address"));
-        data.setCellValueFactory(
-                new PropertyValueFactory<Register, String>("data"));
+        bindTable(fields, memoryTable);
         data.setCellFactory(TextFieldTableCell.forTableColumn());
         data.setOnEditCommit((Event t) -> {
             TableColumn.CellEditEvent<MemoryCell, String> v =
@@ -143,18 +126,29 @@ public class MainController implements Initializable {
         memoryTable.setItems(model.memory);
     }
 
+    private void bindTable(String[] fields, TableView table) {
+        for (int i = 0; i < fields.length; i++) {
+            TableColumn col = (TableColumn)table.getColumns().get(i);
+            col.setCellValueFactory(new PropertyValueFactory
+                    <Instruction, String>(fields[i]));
+        }
+    }
+
     private void update() {
+        instructionTable.refresh();
         addStationTable.refresh();
         mulStationTable.refresh();
         loadStationTable.refresh();
         storeStationTable.refresh();
         registersTable.refresh();
         memoryTable.refresh();
+        clockBar.setProgress((double)model.clock / totalSteps);
         debug();
     }
 
     private void readInstructionsFromFile(String filename)
             throws IOException {
+        instructions.clear();
         // return false if open fails or operation are unformatted
         BufferedReader br = new BufferedReader(new FileReader(new File(filename)));
         String line;
@@ -162,7 +156,7 @@ public class MainController implements Initializable {
             String[] insParse = line.split(" ");
             Instruction instruction = new Instruction(insParse[0]);
             instruction.parseArgs(insParse[1].split(","));
-            model.instructionQueue.offer(instruction);
+            instructions.add(instruction);
         }
     }
 
@@ -184,15 +178,29 @@ public class MainController implements Initializable {
         update();
     }
 
-    private void debug() {
-        System.out.println("== Debugging Registers ==");
+    private int guessStep() {
+        int steps = 0;
+        RuntimeModel model = new RuntimeModel();
+        model.addInstructions(instructions);
+        while (!model.finished()) {
+            steps += 1;
+            model.tick();
+        }
+        return steps;
+    }
 
+    private void debug() {
+        System.out.println("== Debugging Instructions ==");
+        for (Instruction instruction : model.instructions) {
+            System.out.println(instruction.toString());
+        }
+
+        System.out.println("== Debugging Registers ==");
         for (Register reg : model.registers) {
             System.out.println(reg.toString());
         }
 
         System.out.println("== Debugging Reserved stations ==");
-
         for (ReservedStation station : model.stations) {
             System.out.println(station.toString());
         }

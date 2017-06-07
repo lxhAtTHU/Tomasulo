@@ -3,6 +3,7 @@ package Tomasulo;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -19,6 +20,8 @@ public class RuntimeModel {
 
     public int clock = 0;
 
+    public ObservableList<Instruction> instructions =
+            FXCollections.observableArrayList();
     public Queue<Instruction> instructionQueue =
             new LinkedList<>();
     public ObservableList<Register> registers =
@@ -49,7 +52,7 @@ public class RuntimeModel {
         clock++;
 
         Instruction instruction = instructionQueue.peek();
-        if (instruction != null) checkResStations(instruction);
+        if (instruction != null) emitInstruction(instruction);
         // return STALL_STATION if no empty station
 
         // update ALU infomation. if finished, inform those waiting
@@ -64,32 +67,52 @@ public class RuntimeModel {
         startNewWork(BASE_STORE_STATION, NUM_STORE_STATION, ID_STORE_STATION);
     }
 
-    private int checkResStations(Instruction nextInstruction) {
+    public boolean finished() {
+        for (Instruction instruction : instructions) {
+            if (!instruction.writeback) return false;
+        }
+        return true;
+    }
+
+    public void addInstructions(ArrayList<Instruction> instructions) {
+        for (Instruction instruction : instructions) {
+            addInstruction(instruction);
+        }
+    }
+
+    public void addInstruction(Instruction instruction) {
+        Instruction cloned = instruction.clone();
+        instructions.add(cloned);
+        instructionQueue.offer(cloned);
+    }
+
+    private int emitInstruction(Instruction nextInstruction) {
         switch (nextInstruction.operation) {
             case ADDD: case SUBD:
-                return tryResStation(BASE_ADD_STATION, NUM_ADD_STATION);
+                return tryStation(BASE_ADD_STATION, NUM_ADD_STATION);
             case MULTD: case DIVD:
-                return tryResStation(BASE_MUL_STATION, NUM_MUL_STATION);
+                return tryStation(BASE_MUL_STATION, NUM_MUL_STATION);
             case LD:
                 if (hasAddressInMemBuffer(nextInstruction.addr))
                     return STALL_STATION;
-                return tryResStation(BASE_LOAD_STATION, NUM_LOAD_STATION);
+                return tryStation(BASE_LOAD_STATION, NUM_LOAD_STATION);
             case ST:
                 if (hasAddressInMemBuffer(nextInstruction.addr))
                     return STALL_STATION;
-                return tryResStation(BASE_STORE_STATION, NUM_STORE_STATION);
+                return tryStation(BASE_STORE_STATION, NUM_STORE_STATION);
             default:
                 return STALL_STATION;
         }
     }
 
-    private int tryResStation(int base, int num) {
+    private int tryStation(int base, int num) {
         for (int idx = base; idx < (base + num); idx++) {
             ReservedStation station = stations.get(idx);
-            if (station.operation == Instruction.Operation.EMPTY) {
-                // Station available
+            if (station.instruction == null) {
+                // Station available, emit to this station
                 Instruction nextInstruction = instructionQueue.poll();
                 addInstructionToStation(idx, nextInstruction);
+                nextInstruction.emit = true;
                 return idx;  // Use this station
             }
         }
@@ -99,7 +122,7 @@ public class RuntimeModel {
     private boolean hasAddressInMemBuffer(int address) {
         for (int i = BASE_LOAD_STATION; i < BASE_END; i++) {
             ReservedStation station = stations.get(i);
-            if (station.operation != Instruction.Operation.EMPTY &&
+            if (station.instruction == null &&
                     address == station.address) {
                 return true;
             }
@@ -107,10 +130,9 @@ public class RuntimeModel {
         return false;
     }
 
-    public void addInstructionToStation(int idx, Instruction instruction) {
+    private void addInstructionToStation(int idx, Instruction instruction) {
         ReservedStation station = stations.get(idx);
-        station.operation = instruction.operation;
-        station.circleTotalNeed = instruction.getCycle();
+        station.instruction = instruction;
 
         switch (instruction.operation) {
             case LD:
@@ -186,15 +208,21 @@ public class RuntimeModel {
         int currExec = aluWorkingOn[aluIndex];
         if (currExec == -1) return;
 
-        stations.get(currExec).circleLeft -= 1;
+        ReservedStation station = stations.get(currExec);
 
-        // ALU finished
-        if (stations.get(currExec).circleLeft == -1) {
-            // Not 0 because 1 circle is needed for writing back
+        station.circleLeft -= 1;
 
+        // ALU calculation finished
+        if (station.circleLeft == 0) {
+            station.instruction.done = true;
+        }
+
+        // Writeback finished
+        if (station.circleLeft == -1) {
             // Inform who need result
-            float res = operation(stations.get(currExec));
+            float res = operation(station);
             inform(res, currExec);
+            station.instruction.writeback = true;
             // Reset station & ALU status
             stations.set(currExec, new ReservedStation(currExec));
             aluWorkingOn[aluIndex] = -1;
@@ -202,7 +230,7 @@ public class RuntimeModel {
     }
 
     private float operation(ReservedStation rs) {
-        switch (rs.operation) {
+        switch (rs.instruction.operation) {
             case ADDD: return rs.v1 + rs.v2;
             case SUBD: return rs.v1 - rs.v2;
             case MULTD: return rs.v1 * rs.v2;
@@ -231,7 +259,8 @@ public class RuntimeModel {
                 stations.get(i).v2 = res;
                 stations.get(i).r2 = -1;
             }
-            if (stations.get(i).operation.equals(Instruction.Operation.ST)) {
+            if (stations.get(i).instruction.operation ==
+                    Instruction.Operation.ST) {
                 if (stations.get(i).r1 == -1) {
                     stations.get(i).isBusy = false;
                 }
@@ -247,10 +276,10 @@ public class RuntimeModel {
 
         for (int i = base; i < base + num; i++) {
             ReservedStation rs = stations.get(i);
-            if (rs.operation != Instruction.Operation.EMPTY && !rs.isBusy) {
+            if (rs.instruction != null && !rs.isBusy) {
                 // can be executed
                 rs.isBusy = true;
-                rs.circleLeft = rs.circleTotalNeed;
+                rs.circleLeft = rs.instruction.getCycle();
                 aluWorkingOn[alu_index] = i;
                 return;
             }
