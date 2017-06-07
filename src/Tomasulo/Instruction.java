@@ -2,18 +2,75 @@ package Tomasulo;
 
 /**
  * Created by lixiaohan on 6/3/17.
+ * Updated by dotkrnl on 6/8/17
  */
 public class Instruction {
-    static public String add = "ADDD", sub = "SUBD", multi = "MULTD",
-            div = "DIVD", load = "LD", store = "ST";
-    public String ins;
-    public int dst_reg_id, op1_reg_id, op2_reg_id;
+
+    public enum Operation {
+        EMPTY,
+        ADDD, SUBD,
+        MULTD, DIVD,
+        LD, ST
+    };
+
+    public Operation operation;
+
+    public int dstRegId;
+    public int op1RegId, op2RegId;
     public int addr;
 
-    public Instruction(String i, int dst, int op1, int op2) {
-        this.ins = i;
-        this.dst_reg_id = dst;
-        this.op1_reg_id = op1;
-        this.op2_reg_id = op2;
+    public Instruction(String op) {
+        initialize(Operation.valueOf(op.toUpperCase()));
+    }
+
+    public Instruction(Operation op) {
+        initialize(op);
+    }
+
+    public void initialize(Operation op) {
+        this.operation = op;
+    }
+
+    public int getCycle() {
+        switch (operation) {
+            case ADDD: case SUBD:
+            case LD: case ST:
+                return 2;
+            case MULTD:
+                return 10;
+            case DIVD:
+                return 40;
+            default:
+                return 0;
+        }
+    }
+
+    public void parseArgs(String[] args) {
+        switch (operation) {
+            case ADDD: case SUBD:
+            case MULTD: case DIVD:
+                dstRegId = Register.getIDFromName(args[0]);
+                op1RegId = Register.getIDFromName(args[1]);
+                op2RegId = Register.getIDFromName(args[2]);
+                addr = 0;
+                break;
+            case LD:
+                dstRegId = Register.getIDFromName(args[0]);
+                op1RegId = 0;
+                op2RegId = 0;
+                addr = Integer.parseInt(args[1]);
+                break;
+            case ST:
+                dstRegId = 0;
+                op1RegId = Register.getIDFromName(args[0]);
+                op2RegId = 0;
+                addr = Integer.parseInt(args[1]);
+                break;
+            default:
+                dstRegId = 0;
+                op1RegId = 0;
+                op2RegId = 0;
+                addr = 0;
+        }
     }
 }

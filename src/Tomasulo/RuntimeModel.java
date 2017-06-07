@@ -3,6 +3,7 @@ package Tomasulo;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.util.LinkedList;
 import java.util.Queue;
 
 /**
@@ -11,238 +12,266 @@ import java.util.Queue;
  */
 public class RuntimeModel {
 
-    static public String add = "ADDD", sub = "SUBD", multi = "MULTD",
-            div = "DIVD", load = "LD", store = "ST";
-    static public int num_a = 3, num_m = 2, num_l = 3, num_s = 3, num_reg =
-            16, num_mem = 4096;
-    static public int base_a = 0, base_m = 3, base_l = 5, base_s = 8;
+    static public int NUM_ADD_STATION = 3, NUM_MUL_STATION = 2;
+    static public int NUM_LOAD_STATION = 3, NUM_STORE_STATION = 3;
 
-    public Queue<Instruction> ins_queue;
+    static public int NUM_REGISTER = 16, NUM_MEMORY = 4096;
+
+    public int clock = 0;
+
+    public Queue<Instruction> instructionQueue =
+            new LinkedList<>();
     public ObservableList<Register> registers =
             FXCollections.observableArrayList();
     public ObservableList<MemoryCell> memory =
             FXCollections.observableArrayList();
 
-    public ReservedStation[] stations =
-            new ReservedStation[num_a + num_m + num_l + num_s];
+    public ObservableList<ReservedStation> stations =
+            FXCollections.observableArrayList();
 
-    public int clock = 0;
-    public int[] alu_exec = {-1, -1, -1, -1}; // a, m, l, s
+    // For ALU ID see ID_*_STATION
+    public int[] aluWorkingOn = {-1, -1, -1, -1};
 
     public RuntimeModel() {
-        for (int i = 0; i < num_reg; i++) {
-            registers.add(new Register(i));
-        }
-        for (int i = 0; i < num_mem; i++) {
-            memory.add(new MemoryCell(i));
-        }
+        initialize();
     }
 
-    private int checkResStations(Instruction next_ins) {
-        if (next_ins.ins.equals(add) || next_ins.ins.equals(sub)) {
-            return tryResStation(base_a, num_a);
-        } else if (next_ins.ins.equals(multi) || next_ins.ins.equals(div)) {
-            return tryResStation(base_m, num_m);
-        } else if (next_ins.ins.equals(load)) {
-            if (hasAddrInMemBuffer(next_ins.addr))
-                return -1;
-            return tryResStation(base_l, num_l);
-        } else if (next_ins.ins.equals(store)) {
-            if (hasAddrInMemBuffer(next_ins.addr))
-                return -1;
-            return tryResStation(base_s, num_s);
-        } else {
-            return -1;
-        }
+    private void initialize() {
+        for (int i = 0; i < NUM_REGISTER; i++)
+            registers.add(new Register(i));
+        for (int i = 0; i < NUM_MEMORY; i++)
+            memory.add(new MemoryCell(i));
+        for (int i = 0; i < NUM_STATIONS; i++)
+            stations.add(new ReservedStation(i));
     }
 
     public void tick() {
         clock++;
-        // fetch ins
-        Instruction next_ins = ins_queue.peek();
-        int station_id;
-        if (next_ins != null)
-            station_id = checkResStations(next_ins); // return -1 if no empty station
-        // update alu infomation. if finished, inform those waiting
-        updateALU(base_a, num_a, 0);
-        updateALU(base_m, num_m, 1);
-        updateALU(base_l, num_l, 2);
-        updateALU(base_s, num_s, 3);
-        startNewWork(base_a, num_a, 0);
-        startNewWork(base_m, num_m, 1);
-        startNewWork(base_l, num_l, 2);
-        startNewWork(base_s, num_s, 3);
+
+        Instruction instruction = instructionQueue.peek();
+        if (instruction != null) checkResStations(instruction);
+        // return STALL_STATION if no empty station
+
+        // update ALU infomation. if finished, inform those waiting
+        updateALU(BASE_ADD_STATION, NUM_ADD_STATION, ID_ADD_STATION);
+        updateALU(BASE_MUL_STATION, NUM_MUL_STATION, ID_MUL_STATION);
+        updateALU(BASE_LOAD_STATION, NUM_LOAD_STATION, ID_LOAD_STATION);
+        updateALU(BASE_STORE_STATION, NUM_STORE_STATION, ID_STORE_STATION);
+
+        startNewWork(BASE_ADD_STATION, NUM_ADD_STATION, ID_ADD_STATION);
+        startNewWork(BASE_MUL_STATION, NUM_MUL_STATION, ID_MUL_STATION);
+        startNewWork(BASE_LOAD_STATION, NUM_LOAD_STATION, ID_LOAD_STATION);
+        startNewWork(BASE_STORE_STATION, NUM_STORE_STATION, ID_STORE_STATION);
     }
 
-    private boolean hasAddrInMemBuffer(int addr) {
-        for (int i = base_l; i < base_l + num_l + num_s; i++) {
-            if (!stations[i].ins.equals("") && (addr == stations[i].addr))
+    private int checkResStations(Instruction nextInstruction) {
+        switch (nextInstruction.operation) {
+            case ADDD: case SUBD:
+                return tryResStation(BASE_ADD_STATION, NUM_ADD_STATION);
+            case MULTD: case DIVD:
+                return tryResStation(BASE_MUL_STATION, NUM_MUL_STATION);
+            case LD:
+                if (hasAddressInMemBuffer(nextInstruction.addr))
+                    return STALL_STATION;
+                return tryResStation(BASE_LOAD_STATION, NUM_LOAD_STATION);
+            case ST:
+                if (hasAddressInMemBuffer(nextInstruction.addr))
+                    return STALL_STATION;
+                return tryResStation(BASE_STORE_STATION, NUM_STORE_STATION);
+            default:
+                return STALL_STATION;
+        }
+    }
+
+    private int tryResStation(int base, int num) {
+        for (int idx = base; idx < (base + num); idx++) {
+            ReservedStation station = stations.get(idx);
+            if (station.operation == Instruction.Operation.EMPTY) {
+                // Station available
+                Instruction nextInstruction = instructionQueue.poll();
+                addInstructionToStation(idx, nextInstruction);
+                return idx;  // Use this station
+            }
+        }
+        return STALL_STATION;
+    }
+
+    private boolean hasAddressInMemBuffer(int address) {
+        for (int i = BASE_LOAD_STATION; i < BASE_END; i++) {
+            ReservedStation station = stations.get(i);
+            if (station.operation != Instruction.Operation.EMPTY &&
+                    address == station.address) {
                 return true;
+            }
         }
         return false;
     }
 
-    private int tryResStation(int base, int num) {
-        for (int i = base; i < (base + num); i++) {
-            if (stations[i].ins.equals("")) {
-                // empty
-                Instruction next_ins = ins_queue.poll();
-                addIns(i, next_ins);
-                return i;
-            }
+    public void addInstructionToStation(int idx, Instruction instruction) {
+        ReservedStation station = stations.get(idx);
+        station.operation = instruction.operation;
+        station.circleTotalNeed = instruction.getCycle();
+
+        switch (instruction.operation) {
+            case LD:
+                stations.get(idx).address = instruction.addr;
+                configureLoadStation(idx, instruction);
+                break;
+            case ST:
+                stations.get(idx).address = instruction.addr;
+                configureStoreStation(idx, instruction);
+                break;
+            default:
+                configureCalcStation(idx, instruction);
         }
-        return -1;
     }
 
-    public void addIns(int rs, Instruction instruction) {
-        stations[rs].ins = instruction.ins;
-        stations[rs].addr = instruction.addr;
+    private void configureLoadStation(int idx, Instruction instruction) {
+        // set waiting and register
+        registers.get(instruction.dstRegId).resStaId = idx;
+        stations.get(idx).regWaited.add(instruction.dstRegId);
+    }
 
-        if (stations[rs].ins.equals(load)) {
-            // set waiting and register
-            registers.get(instruction.dst_reg_id).res_sta_id = rs;
-            stations[rs].reg_waited.add(instruction.dst_reg_id);
-            stations[rs].is_busy = false;
-        } else if (stations[rs].ins.equals(store)) {
-            int src_reg = instruction.op1_reg_id;
-            // ins in res_sta[rs] needs data from reg[src_reg]
-            // check if data need is ready.
-            // if ready, set v
-            // else set r and register in station and set is_busy
-            if (registers.get(src_reg).res_sta_id == -1) {
-                stations[rs].v1 = registers.get(src_reg).data;
-                stations[rs].r1 = -1;
-                stations[rs].is_busy = false;
-            } else {
-                stations[rs].r1 = registers.get(src_reg).res_sta_id;
-                stations[registers.get(src_reg).res_sta_id].res_sta_waited
-                        .add(rs);
-                stations[rs].is_busy = true;
-            }
+    private void configureStoreStation(int idx, Instruction instruction) {
+        int srcReg = instruction.op1RegId;
+        // operation in res_sta[idx] needs data from reg[srcReg]
+        // check if data need is ready.
+        // if ready, set v
+        // else set r and register in station and set isBusy
+        if (registers.get(srcReg).resStaId == -1) {
+            stations.get(idx).v1 = registers.get(srcReg).data;
+            stations.get(idx).r1 = -1;
         } else {
-            // three ops
-            // set dst reg waiting and register
-            registers.get(instruction.dst_reg_id).res_sta_id = rs;
-            stations[rs].reg_waited.add(instruction.dst_reg_id);
-            // check if waiting for data from reg
-            int src_reg = instruction.op1_reg_id;
-            if (registers.get(src_reg).res_sta_id == -1) {
-                stations[rs].v1 = registers.get(src_reg).data;
-                stations[rs].r1 = -1;
-            } else {
-                stations[rs].r1 = registers.get(src_reg).res_sta_id;
-                stations[registers.get(src_reg).res_sta_id].res_sta_waited
-                        .add(rs);
-                stations[rs].is_busy = true;
-            }
-
-            src_reg = instruction.op2_reg_id;
-            if (registers.get(src_reg).res_sta_id == -1) {
-                stations[rs].v2 = registers.get(src_reg).data;
-                stations[rs].r2 = -1;
-            } else {
-                stations[rs].r2 = registers.get(src_reg).res_sta_id;
-                stations[registers.get(src_reg).res_sta_id].res_sta_waited
-                        .add(rs);
-                stations[rs].is_busy = true;
-            }
-            if (stations[rs].r1 + stations[rs].r2 == -2)
-                stations[rs].is_busy = false;
+            stations.get(idx).r1 = registers.get(srcReg).resStaId;
+            stations.get(registers.get(srcReg).resStaId)
+                    .resStaWaited.add(idx);
+            stations.get(idx).isBusy = true;
         }
-        setTotalCircle(rs);
     }
 
-    private void setTotalCircle(int id) {
-        ReservedStation rs = stations[id];
-        if (rs.ins.equals(add) || rs.ins.equals(sub) || rs.ins.equals(load) || rs.ins.equals(store)) {
-            rs.circle_total_need = 2;
-        } else if (rs.ins.equals(multi)) {
-            rs.circle_total_need = 10;
-        } else rs.circle_total_need = 40;
+    private void configureCalcStation(int idx, Instruction instruction) {
+        // Three args.
+        // Set dstReg waiting and register
+        registers.get(instruction.dstRegId).resStaId = idx;
+        stations.get(idx).regWaited.add(instruction.dstRegId);
+
+        // Set srcReg check if waiting for data from reg
+        int srcReg = instruction.op1RegId;
+        if (registers.get(srcReg).resStaId == -1) {
+            stations.get(idx).v1 = registers.get(srcReg).data;
+            stations.get(idx).r1 = -1;
+        } else {
+            stations.get(idx).r1 = registers.get(srcReg).resStaId;
+            stations.get(registers.get(srcReg).resStaId)
+                    .resStaWaited.add(idx);
+            stations.get(idx).isBusy = true;
+        }
+
+        srcReg = instruction.op2RegId;
+        if (registers.get(srcReg).resStaId == -1) {
+            stations.get(idx).v2 = registers.get(srcReg).data;
+            stations.get(idx).r2 = -1;
+        } else {
+            stations.get(idx).r2 = registers.get(srcReg).resStaId;
+            stations.get(registers.get(srcReg).resStaId)
+                    .resStaWaited.add(idx);
+            stations.get(idx).isBusy = true;
+        }
+
+        if (stations.get(idx).r1 + stations.get(idx).r2 == -2)
+            stations.get(idx).isBusy = false;
     }
 
-    private void updateALU(int base, int num, int alu_index) {
-        int curr_exec = alu_exec[alu_index];
-        if (curr_exec != -1) {
-            stations[curr_exec].circle_left -= 1;
+    private void updateALU(int base, int num, int aluIndex) {
+        int currExec = aluWorkingOn[aluIndex];
+        if (currExec == -1) return;
 
-            if (stations[curr_exec].circle_left == -1) {
-                // not 0 because 1 circle is needed for writing back
-                // alu finished
-                // inform who need result
-                float res = operation(stations[curr_exec]);
-                inform(res, curr_exec);
-                // update variable
-                stations[curr_exec].ins = "";
-                stations[curr_exec].is_busy = false;
-                alu_exec[alu_index] = -1;
-            }
+        stations.get(currExec).circleLeft -= 1;
+
+        // ALU finished
+        if (stations.get(currExec).circleLeft == -1) {
+            // Not 0 because 1 circle is needed for writing back
+
+            // Inform who need result
+            float res = operation(stations.get(currExec));
+            inform(res, currExec);
+            // Reset station & ALU status
+            stations.set(currExec, new ReservedStation(currExec));
+            aluWorkingOn[aluIndex] = -1;
         }
     }
 
     private float operation(ReservedStation rs) {
-        if (rs.ins.equals(add)) {
-            return rs.v1 + rs.v2;
-        } else if (rs.ins.equals(sub)) {
-            return rs.v1 - rs.v2;
-        } else if (rs.ins.equals(multi)) {
-            return rs.v1 * rs.v2;
-        } else if (rs.ins.equals(div)) {
-            return rs.v1 / rs.v2;
-        } else if (rs.ins.equals(load)) {
-            return memory.get(rs.addr).getFloat();
-        } else if (rs.ins.equals(store)) {
-            memory.get(rs.addr).setFloat(rs.v1);
-            return 0;
-        } else {
-            return -1;
+        switch (rs.operation) {
+            case ADDD: return rs.v1 + rs.v2;
+            case SUBD: return rs.v1 - rs.v2;
+            case MULTD: return rs.v1 * rs.v2;
+            case DIVD: return rs.v1 / rs.v2;
+            case LD: return memory.get(rs.address).getFloat();
+            case ST: memory.get(rs.address).setFloat(rs.v1); return 0;
+            default: return -1;
         }
     }
 
     private void inform(float res, int rs_index) {
         // stations[rs_index] has a result res
-        ReservedStation rs = stations[rs_index];
-        for (Integer i : rs.reg_waited) {
-            if (registers.get(i).res_sta_id == rs_index) {
+        ReservedStation rs = stations.get(rs_index);
+        for (Integer i : rs.regWaited) {
+            if (registers.get(i).resStaId == rs_index) {
                 registers.get(i).data = res;
-                registers.get(i).res_sta_id = -1;
+                registers.get(i).resStaId = -1;
             }
         }
-        for (Integer i : rs.res_sta_waited) {
-            if (stations[i].r1 == rs_index) {
-                stations[i].v1 = res;
-                stations[i].r1 = -1;
+        for (Integer i : rs.resStaWaited) {
+            if (stations.get(i).r1 == rs_index) {
+                stations.get(i).v1 = res;
+                stations.get(i).r1 = -1;
             }
-            if (stations[i].r2 == rs_index) {
-                stations[i].v2 = res;
-                stations[i].r2 = -1;
+            if (stations.get(i).r2 == rs_index) {
+                stations.get(i).v2 = res;
+                stations.get(i).r2 = -1;
             }
-            if (stations[i].ins.equals(store)) {
-                if (stations[i].r1 == -1) {
-                    stations[i].is_busy = false;
+            if (stations.get(i).operation.equals(Instruction.Operation.ST)) {
+                if (stations.get(i).r1 == -1) {
+                    stations.get(i).isBusy = false;
                 }
-            } else if (stations[i].r1 + stations[i].r2 == -2) {
-                stations[i].is_busy = false;
+            } else if (stations.get(i).r1 + stations.get(i).r2 == -2) {
+                stations.get(i).isBusy = false;
             }
         }
     }
 
     private void startNewWork(int base, int num, int alu_index) {
-        if (alu_exec[alu_index] != -1)
-            return;
+        if (aluWorkingOn[alu_index] != -1)
+            return;  // still working
+
         for (int i = base; i < base + num; i++) {
-            ReservedStation rs = stations[i];
-            if (!rs.ins.equals("") && !rs.is_busy) {
+            ReservedStation rs = stations.get(i);
+            if (rs.operation != Instruction.Operation.EMPTY && !rs.isBusy) {
                 // can be executed
-                rs.is_busy = true;
-                rs.circle_left = rs.circle_total_need;
-                alu_exec[alu_index] = i;
+                rs.isBusy = true;
+                rs.circleLeft = rs.circleTotalNeed;
+                aluWorkingOn[alu_index] = i;
                 return;
             }
         }
-        // no ins executed
-        alu_exec[alu_index] = -1;
-        return;
+
+        // no operation executed
     }
+
+    // Utils calculations
+    static public int NUM_STATIONS = NUM_ADD_STATION + NUM_MUL_STATION +
+            NUM_LOAD_STATION + NUM_STORE_STATION;
+
+    static public int BASE_ADD_STATION = 0;
+    static public int BASE_MUL_STATION = BASE_ADD_STATION + NUM_ADD_STATION;
+    static public int BASE_LOAD_STATION = BASE_MUL_STATION + NUM_MUL_STATION;
+    static public int BASE_STORE_STATION = BASE_LOAD_STATION + NUM_STORE_STATION;
+    static public int BASE_END = BASE_STORE_STATION + NUM_STORE_STATION;
+
+    static public int ID_ADD_STATION = 0, ID_MUL_STATION = 1;
+    static public int ID_LOAD_STATION = 2, ID_STORE_STATION = 3;
+
+    static final int STALL_STATION = -1;
 
 }
