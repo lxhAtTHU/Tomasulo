@@ -70,6 +70,9 @@ public class MainController implements Initializable {
         model.addInstructions(instructions);
         totalSteps = guessStep();
 
+        playing.stop();
+        isPlaying = false;
+
         setMem(); // TODO: read from memory file
         bindData();
         update();
