@@ -27,7 +27,8 @@
                 </menus>
             </MenuBar>
             <Button minWidth="80.0" mnemonicParsing="false" onAction="#start" text="重启" />
-            <Button minWidth="80.0" mnemonicParsing="false" onAction="#step" text="下一步" />
+            <Button fx:id="stepButton" minWidth="80.0" mnemonicParsing="false"
+                    onAction="#step" text="下一步" />
             <Button fx:id="playButton" minWidth="80.0" mnemonicParsing="false"
                     onAction="#play"
                     text="播放" />

@@ -30,6 +30,7 @@ public class MainController implements Initializable {
     @FXML private ProgressBar clockBar;
     @FXML private Menu clockLabel;
     @FXML private Button playButton;
+    @FXML private Button stepButton;
 
     @FXML private TableView instructionTable;
     @FXML private TableView addStationTable;
@@ -172,8 +173,10 @@ public class MainController implements Initializable {
 
         if (model.finished()) {
             playButton.setDisable(true);
+            stepButton.setDisable(true);
         } else {
             playButton.setDisable(false);
+            stepButton.setDisable(false);
         }
         //debug();
     }
