@@ -2,6 +2,9 @@ package Tomasulo;
 
 import java.io.*;
 
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -11,6 +14,7 @@ import javafx.stage.*;
 import javafx.scene.layout.*;
 import javafx.scene.control.*;
 import javafx.event.*;
+import javafx.util.Duration;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,6 +28,8 @@ public class MainController implements Initializable {
 
     @FXML private HBox mainHBox;
     @FXML private ProgressBar clockBar;
+    @FXML private Menu clockLabel;
+    @FXML private Button playButton;
 
     @FXML private TableView instructionTable;
     @FXML private TableView addStationTable;
@@ -37,8 +43,17 @@ public class MainController implements Initializable {
     private int totalSteps = -1;
     private ArrayList<Instruction> instructions = new ArrayList<>();
 
+    private Timeline playing;
+    private boolean isPlaying = false;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        playing = new Timeline(new KeyFrame(Duration.millis(500), ae -> {
+            if (model.finished()) togglePlay();
+            step(null);
+        }));
+        playing.setCycleCount(Animation.INDEFINITE);
+
         // TODO: Read from file dialog
         try {
             readInstructionsFromFile("/Users/dotkrnl/ins.txt");
@@ -142,8 +157,22 @@ public class MainController implements Initializable {
         storeStationTable.refresh();
         registersTable.refresh();
         memoryTable.refresh();
+
         clockBar.setProgress((double)model.clock / totalSteps);
-        debug();
+        clockLabel.setText("第 " + model.clock + " 步");
+
+        if (isPlaying) {
+            playButton.setText("暂停");
+        } else {
+            playButton.setText("播放");
+        }
+
+        if (model.finished()) {
+            playButton.setDisable(true);
+        } else {
+            playButton.setDisable(false);
+        }
+        //debug();
     }
 
     private void readInstructionsFromFile(String filename)
@@ -160,7 +189,7 @@ public class MainController implements Initializable {
         }
     }
 
-    private void setMem(){
+    private void setMem() {
         model.memory.get(0).setFloat(10);
         model.memory.get(4).setFloat(6);
         model.memory.get(16).setFloat(8);
@@ -174,7 +203,24 @@ public class MainController implements Initializable {
 
     @FXML
     private void step(ActionEvent event) {
-        model.tick();
+        if (model != null && !model.finished())
+            model.tick();
+        update();
+    }
+
+    @FXML
+    private void play(ActionEvent event) {
+        togglePlay();
+    }
+
+    private void togglePlay() {
+        if (isPlaying) {
+            playing.stop();
+            isPlaying = false;
+        } else {
+            playing.play();
+            isPlaying = true;
+        }
         update();
     }
 
