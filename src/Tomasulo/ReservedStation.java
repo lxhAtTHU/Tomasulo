@@ -26,16 +26,19 @@ public class ReservedStation {
     public ReservedStation(int idx) {
         staId = idx;
     }
+
     public String getStationId() {
         return String.valueOf(staId);
     }
 
     public String getOperation() {
-        return operation.toString();
+        if (operation == Instruction.Operation.EMPTY) return "";
+        else return operation.toString();
     }
 
     public String getBusy() {
-        return isBusy ? "忙" : "可用";
+        if (operation == Instruction.Operation.EMPTY) return "";
+        else return isBusy ? "忙" : "可用";
     }
 
     public String getValue1() {
@@ -59,7 +62,7 @@ public class ReservedStation {
 
     public String getCircleLeft() {
         if (operation == Instruction.Operation.EMPTY) return "";
-        else if (circleLeft == -1) return "未开始";
+        else if (circleLeft == -1) return "初";
         else return String.valueOf(circleLeft);
     }
 

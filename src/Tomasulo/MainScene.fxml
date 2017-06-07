@@ -49,7 +49,8 @@
          </VBox>
          <VBox prefHeight="676.0" prefWidth="326.0" spacing="10.0">
              <children>
-                 <TableView id="alu-table" editable="false" prefHeight="338.0"
+                 <TableView fx:id="addStationTable" id="add-table"
+                            editable="false" prefHeight="169.0"
                             prefWidth="326.0">
                      <columns>
                          <TableColumn text="序号" />
@@ -64,7 +65,24 @@
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                      </columnResizePolicy>
                  </TableView>
-                 <TableView id="load-table" editable="true" prefHeight="169.0" prefWidth="326.0">
+                 <TableView fx:id="mulStationTable" id="mul-table"
+                            editable="false" prefHeight="169.0"
+                            prefWidth="326.0">
+                     <columns>
+                         <TableColumn text="序号" />
+                         <TableColumn text="指令" />
+                         <TableColumn text="忙" />
+                         <TableColumn text="剩余" />
+                         <TableColumn text="总周期" />
+                         <TableColumn text="V1" />
+                         <TableColumn text="V2" />
+                     </columns>
+                     <columnResizePolicy>
+                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                     </columnResizePolicy>
+                 </TableView>
+                 <TableView fx:id="loadStationTable" id="load-table"
+                            editable="true" prefHeight="169.0" prefWidth="326.0">
                      <columns>
                          <TableColumn text="序号" />
                          <TableColumn id="load-table-busy" text="忙" />
@@ -75,12 +93,13 @@
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                      </columnResizePolicy>
                  </TableView>
-                 <TableView id="store-table" editable="true" prefHeight="169.0" prefWidth="326.0">
+                 <TableView fx:id="storeStationTable" id="store-table"
+                            editable="true" prefHeight="169.0" prefWidth="326.0">
                      <columns>
                          <TableColumn text="序号" />
                          <TableColumn id="store-table-busy" text="忙" />
                          <TableColumn id="store-table-addr" text="地址" />
-                         <TableColumn id="store-table-qi" text="Qi" />
+                         <TableColumn id="store-table-qi" text="源" />
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
