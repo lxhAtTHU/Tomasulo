@@ -20,13 +20,17 @@
                 <menus>
                     <Menu mnemonicParsing="false" text="文件">
                         <items>
+                            <MenuItem mnemonicParsing="false"
+                                      onAction="#openInstruction"
+                                      text="加载指令" />
                             <MenuItem mnemonicParsing="false" onAction="#close" text="关闭" />
                         </items>
                     </Menu>
                     <Menu fx:id="clockLabel" disable="true" mnemonicParsing="false" style="-fx-opacity: 1 !important;" text="未运行" />
                 </menus>
             </MenuBar>
-            <Button minWidth="80.0" mnemonicParsing="false" onAction="#start" text="重启" />
+            <Button fx:id="startButton" minWidth="80.0" mnemonicParsing="false"
+                    onAction="#start" text="重启" />
             <Button fx:id="stepButton" minWidth="80.0" mnemonicParsing="false"
                     onAction="#step" text="下一步" />
             <Button fx:id="playButton" minWidth="80.0" mnemonicParsing="false"

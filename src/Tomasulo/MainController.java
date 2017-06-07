@@ -29,8 +29,9 @@ public class MainController implements Initializable {
     @FXML private HBox mainHBox;
     @FXML private ProgressBar clockBar;
     @FXML private Menu clockLabel;
-    @FXML private Button playButton;
+    @FXML private Button startButton;
     @FXML private Button stepButton;
+    @FXML private Button playButton;
 
     @FXML private TableView instructionTable;
     @FXML private TableView addStationTable;
@@ -54,16 +55,7 @@ public class MainController implements Initializable {
             step(null);
         }));
         playing.setCycleCount(Animation.INDEFINITE);
-
-        // TODO: Read from file dialog
-        try {
-            readInstructionsFromFile("/Users/dotkrnl/ins.txt");
-        } catch (FileNotFoundException err) {
-            System.err.println("File not found!");
-        } catch (IOException err) {
-            System.err.println("I/O failed!");
-        }
-        start();
+        update();
     }
 
     public void start() {
@@ -162,8 +154,12 @@ public class MainController implements Initializable {
         registersTable.refresh();
         memoryTable.refresh();
 
-        clockBar.setProgress((double)model.clock / totalSteps);
-        clockLabel.setText("第 " + model.clock + " 步");
+        boolean noData = instructions.isEmpty();
+
+        if (!noData) {
+            clockBar.setProgress((double) model.clock / totalSteps);
+            clockLabel.setText("第 " + model.clock + " 步");
+        }
 
         if (isPlaying) {
             playButton.setText("暂停");
@@ -171,7 +167,13 @@ public class MainController implements Initializable {
             playButton.setText("播放");
         }
 
-        if (model.finished()) {
+        if (noData) {
+            startButton.setDisable(true);
+        } else {
+            startButton.setDisable(false);
+        }
+
+        if (noData || model.finished()) {
             playButton.setDisable(true);
             stepButton.setDisable(true);
         } else {
@@ -217,6 +219,38 @@ public class MainController implements Initializable {
     @FXML
     private void play(ActionEvent event) {
         togglePlay();
+    }
+
+    @FXML
+    private void openInstruction(ActionEvent event) {
+        Stage stage = (Stage)mainHBox.getScene().getWindow();
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("请选择指令文件");
+            File file = fileChooser.showOpenDialog(stage);
+            if (file != null) {
+                readInstructionsFromFile(file.getPath());
+                start();
+            }
+        } catch (FileNotFoundException err) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("文件未找到！");
+            alert.setHeaderText("加载失败！");
+            alert.setContentText("奇怪，你的文件不见了。");
+            alert.showAndWait();
+        } catch (IOException err) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("文件读取失败！");
+            alert.setHeaderText("加载失败！");
+            alert.setContentText("奇怪，你的文件读不出来。");
+            alert.showAndWait();
+        } catch (IllegalArgumentException err) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("不是有效文件！");
+            alert.setHeaderText("加载失败！");
+            alert.setContentText("你的文件好像不是有效指令文件呢。");
+            alert.showAndWait();
+        }
     }
 
     private void togglePlay() {
