@@ -26,7 +26,7 @@ public class Register {
 
     public String getStationID() {
         if (resStaId == -1) return "";
-        else return String.valueOf(resStaId);
+        else return "<[" + String.valueOf(resStaId) + "]";
     }
 
     public String getData() {

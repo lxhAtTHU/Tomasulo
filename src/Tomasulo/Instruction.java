@@ -42,12 +42,13 @@ public class Instruction {
 
     public String getDestination() {
         if (operation == Operation.ST) return "@" + String.valueOf(addr);
-        else return String.valueOf(dstRegId);
+        else return "F" + String.valueOf(dstRegId);
     }
 
     public String getSource() {
         if (operation == Operation.LD) return "@" + String.valueOf(addr);
-        else return String.valueOf(op1RegId) + ", " + String.valueOf(op2RegId);
+        else return "F" + String.valueOf(op1RegId) + ", " +
+                "F" + String.valueOf(op2RegId);
     }
 
     public String getEmit() {

@@ -13,7 +13,7 @@ public class MemoryCell {
     }
 
     public String getAddress() {
-        return String.valueOf(address);
+        return "@" + String.valueOf(address);
     }
 
     public float getFloat() {

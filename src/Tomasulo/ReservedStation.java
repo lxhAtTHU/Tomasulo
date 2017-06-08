@@ -28,7 +28,7 @@ public class ReservedStation {
     }
 
     public String getStationId() {
-        return String.valueOf(staId);
+        return "<[" + String.valueOf(staId) + "]";
     }
 
     public String getOperation() {
@@ -57,7 +57,7 @@ public class ReservedStation {
 
     public String getAddress() {
         if (address == -1) return "";
-        else return String.valueOf(address);
+        else return "@" + String.valueOf(address);
     }
 
     public String getCircleLeft() {
