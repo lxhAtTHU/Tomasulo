@@ -44,12 +44,18 @@
              <children>
                  <TableView id="ins-table" fx:id="instructionTable" editable="true" prefHeight="1304.0">
                      <columns>
-                         <TableColumn id="ins-table-name" text="指令" />
-                         <TableColumn id="ins-table-dest" text="目的" />
-                         <TableColumn id="ins-table-source" text="源" />
-                         <TableColumn id="ins-table-emit" text="发射" />
-                         <TableColumn id="ins-table-done" text="执行" />
-                         <TableColumn id="ins-table-back" text="写回" />
+                         <TableColumn id="ins-table-name" text="指令"
+                                      minWidth="70.0" maxWidth="70.0"/>
+                         <TableColumn id="ins-table-dest" text="目的"
+                                      minWidth="70.0"/>
+                         <TableColumn id="ins-table-source" text="源"
+                                      minWidth="70.0"/>
+                         <TableColumn id="ins-table-emit" text="发射"
+                                      minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn id="ins-table-done" text="执行"
+                                      minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn id="ins-table-back" text="写回"
+                                      minWidth="50.0" maxWidth="50.0"/>
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -61,13 +67,13 @@
              <children>
                  <TableView id="add-table" fx:id="addStationTable" editable="false" prefHeight="169.0">
                      <columns>
-                         <TableColumn text="序号" />
-                         <TableColumn text="指令" />
-                         <TableColumn text="忙" />
-                         <TableColumn text="剩余" />
-                         <TableColumn text="总周期" />
-                         <TableColumn text="V1" />
-                         <TableColumn text="V2" />
+                         <TableColumn text="序号" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="指令" minWidth="70.0" maxWidth="70.0"/>
+                         <TableColumn text="忙" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="剩余" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="总周期" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="V1" minWidth="50.0"/>
+                         <TableColumn text="V2" minWidth="50.0"/>
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -75,13 +81,13 @@
                  </TableView>
                  <TableView id="mul-table" fx:id="mulStationTable" editable="false" prefHeight="169.0">
                      <columns>
-                         <TableColumn text="序号" />
-                         <TableColumn text="指令" />
-                         <TableColumn text="忙" />
-                         <TableColumn text="剩余" />
-                         <TableColumn text="总周期" />
-                         <TableColumn text="V1" />
-                         <TableColumn text="V2" />
+                         <TableColumn text="序号" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="指令" minWidth="70.0" maxWidth="70.0"/>
+                         <TableColumn text="忙" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="剩余" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="总周期" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="V1" minWidth="50.0"/>
+                         <TableColumn text="V2" minWidth="50.0"/>
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -89,12 +95,12 @@
                  </TableView>
                  <TableView id="load-table" fx:id="loadStationTable" editable="true" prefHeight="169.0">
                      <columns>
-                         <TableColumn text="序号" />
-                         <TableColumn id="load-table-busy" text="忙" />
-                         <TableColumn text="剩余" />
-                         <TableColumn text="总周期" />
-                         <TableColumn id="load-table-addr" text="地址" />
-                         <TableColumn id="load-table-cache" text="Cache" />
+                         <TableColumn text="序号" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="忙" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="剩余" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="总周期" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="地址" minWidth="70.0"/>
+                         <TableColumn text="Cache" minWidth="70.0"/>
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -102,12 +108,12 @@
                  </TableView>
                  <TableView id="store-table" fx:id="storeStationTable" editable="true" prefHeight="169.0">
                      <columns>
-                         <TableColumn text="序号" />
-                         <TableColumn id="store-table-busy" text="忙" />
-                         <TableColumn text="剩余" />
-                         <TableColumn text="总周期" />
-                         <TableColumn id="store-table-addr" text="地址" />
-                         <TableColumn id="store-table-qi" text="源" />
+                         <TableColumn text="序号" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="忙" minWidth="30.0" maxWidth="30.0"/>
+                         <TableColumn text="剩余" minWidth="40.0" maxWidth="40.0"/>
+                         <TableColumn text="总周期" minWidth="50.0" maxWidth="50.0"/>
+                         <TableColumn text="地址" minWidth="70.0"/>
+                         <TableColumn text="源" minWidth="70.0"/>
                      </columns>
                      <columnResizePolicy>
                          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
