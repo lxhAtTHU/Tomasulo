@@ -18,6 +18,7 @@ import javafx.util.Duration;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.ResourceBundle;
 
 /**
@@ -104,6 +105,7 @@ public class MainController implements Initializable {
                 new FilteredList<>(model.stations,
                         p -> p.staId >= begin && p.staId < end);
         table.setItems(filteredData);
+        bindALUStatus(table);
     }
 
 
@@ -115,6 +117,7 @@ public class MainController implements Initializable {
                 new FilteredList<>(model.stations,
                         p -> p.staId >= begin && p.staId < end);
         table.setItems(filteredData);
+        bindALUStatus(table);
     }
 
     private void bindRegisters() {
@@ -143,6 +146,28 @@ public class MainController implements Initializable {
             col.setCellValueFactory(new PropertyValueFactory
                     <Instruction, String>(fields[i]));
         }
+    }
+
+    private void bindALUStatus(TableView<ReservedStation> table) {
+        table.setRowFactory((TableView<ReservedStation> tableView) -> {
+            TableRow<ReservedStation> row = new TableRow<ReservedStation>() {
+                @Override
+                protected void updateItem(ReservedStation station,
+                                          boolean empty) {
+                    super.updateItem(station, empty);
+                    if (station == null) return;
+                    if (model.aluWorkingOn.contains(station.staId)) {
+                        if (!getStyleClass().contains("highlighted")) {
+                            getStyleClass().add("highlighted");
+                        } else {
+                            getStyleClass().removeAll(Collections
+                                    .singleton("highlighted"));
+                        }
+                    }
+                }
+            };
+            return row;
+        });
     }
 
     private void update() {

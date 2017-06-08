@@ -76,3 +76,6 @@ MenuBar .label {
     -fx-background-color: -fx-focus-color;
 }
 
+.highlighted {
+    -fx-background-color: -fx-focus-color;
+}

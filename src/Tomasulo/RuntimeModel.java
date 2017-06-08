@@ -33,7 +33,7 @@ public class RuntimeModel {
             FXCollections.observableArrayList();
 
     // For ALU ID see ID_*_STATION
-    public int[] aluWorkingOn = {-1, -1, -1, -1};
+    public ArrayList<Integer> aluWorkingOn = new ArrayList<>();
 
     public RuntimeModel() {
         initialize();
@@ -46,6 +46,8 @@ public class RuntimeModel {
             memory.add(new MemoryCell(i));
         for (int i = 0; i < NUM_STATIONS; i++)
             stations.add(new ReservedStation(i));
+        for (int i = 0; i < 4; i++)
+            aluWorkingOn.add(-1);
     }
 
     public void tick() {
@@ -205,7 +207,7 @@ public class RuntimeModel {
     }
 
     private void updateALU(int base, int num, int aluIndex) {
-        int currExec = aluWorkingOn[aluIndex];
+        int currExec = aluWorkingOn.get(aluIndex);
         if (currExec == -1) return;
 
         ReservedStation station = stations.get(currExec);
@@ -225,7 +227,7 @@ public class RuntimeModel {
             station.instruction.writeback = true;
             // Reset station & ALU status
             stations.set(currExec, new ReservedStation(currExec));
-            aluWorkingOn[aluIndex] = -1;
+            aluWorkingOn.set(aluIndex, -1);
         }
     }
 
@@ -271,7 +273,7 @@ public class RuntimeModel {
     }
 
     private void startNewWork(int base, int num, int alu_index) {
-        if (aluWorkingOn[alu_index] != -1)
+        if (aluWorkingOn.get(alu_index) != -1)
             return;  // still working
 
         for (int i = base; i < base + num; i++) {
@@ -280,7 +282,7 @@ public class RuntimeModel {
                 // can be executed
                 rs.isBusy = true;
                 rs.circleLeft = rs.instruction.getCycle();
-                aluWorkingOn[alu_index] = i;
+                aluWorkingOn.set(alu_index, i);
                 return;
             }
         }
