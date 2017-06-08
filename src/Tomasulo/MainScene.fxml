@@ -125,9 +125,9 @@
             <children>
                <TableView id="registers-table" fx:id="registersTable" editable="false" prefHeight="338.0">
                   <columns>
-                     <TableColumn id="registersTableReg" text="寄存器" />
-                      <TableColumn id="registersTableSta" text="保留站" />
-                     <TableColumn id="registersTableVal" text="值" />
+                     <TableColumn id="registersTableReg" text="寄存器" minWidth="50.0" maxWidth="50.0"/>
+                      <TableColumn id="registersTableSta" text="保留站" minWidth="50.0"/>
+                     <TableColumn id="registersTableVal" text="值" minWidth="50.0"/>
                   </columns>
                   <columnResizePolicy>
                      <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -135,8 +135,9 @@
                </TableView>
                <TableView id="memory-table" fx:id="memoryTable" editable="true" prefHeight="338.0">
                   <columns>
-                     <TableColumn id="registers-table-addr" text="地址" />
-                     <TableColumn id="registers-table-val" text="值" />
+                     <TableColumn id="registers-table-addr" text="地址"
+                                  minWidth="70.0" maxWidth="70.0"/>
+                     <TableColumn id="registers-table-val" text="值" minWidth="50.0"/>
                   </columns>
                   <columnResizePolicy>
                      <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
