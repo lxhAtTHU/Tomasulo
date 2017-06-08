@@ -6,7 +6,7 @@
 #clock-bar > .bar {
     -fx-padding: 2px;
     -fx-background-insets: 0;
-    -fx-background-color: dodgerblue;
+    -fx-background-color: -fx-focus-color;
 }
 
 #clock-bar > .track {
@@ -26,3 +26,53 @@ MenuBar .label {
 #mainVBox {
     -fx-background-color: #2B2B2B;
 }
+
+#menuHBox Button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-text-fill: white;
+    -fx-pref-width: 20px;
+}
+
+#menuHBox Button:hover {
+    -fx-background-color: -fx-focus-color;
+}
+
+#start-button:hover {
+    -fx-background-color: orangered;
+}
+
+#mainHBox .table-view .table-column {
+    -fx-alignment: CENTER-RIGHT;
+}
+
+#mainHBox .table-view {
+    -fx-base: #3C3F41;
+    -fx-control-inner-background: #3C3F41;
+    -fx-background-color: #3C3F41;
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-padding: 5;
+}
+
+#mainHBox .table-view .column-header-background {
+    -fx-background-color: transparent;
+}
+
+#mainHBox .table-view .column-header,
+.table-view .filler {
+    -fx-border-width: 0;
+    -fx-border-insets: 0;
+}
+
+#mainHBox .table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-alignment: center-left;
+    -fx-opacity: 1;
+}
+
+#mainHBox .table-view:focused .table-row-cell:filled:focused:selected {
+    -fx-background-color: -fx-focus-color;
+}
+
