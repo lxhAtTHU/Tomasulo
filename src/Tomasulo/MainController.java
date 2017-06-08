@@ -30,6 +30,8 @@ public class MainController implements Initializable {
     @FXML private HBox mainHBox;
     @FXML private ProgressBar clockBar;
     @FXML private Menu clockLabel;
+    @FXML private MenuItem loadMemoryButton;
+    @FXML private MenuItem saveMemoryButton;
     @FXML private Button startButton;
     @FXML private Button stepButton;
     @FXML private Button playButton;
@@ -66,8 +68,9 @@ public class MainController implements Initializable {
 
         playing.stop();
         isPlaying = false;
+        loadMemoryButton.setDisable(false);
+        saveMemoryButton.setDisable(false);
 
-        setMem(); // TODO: read from memory file
         bindData();
         update();
     }
@@ -222,10 +225,22 @@ public class MainController implements Initializable {
         }
     }
 
-    private void setMem() {
-        model.memory.get(0).setFloat(10);
-        model.memory.get(4).setFloat(6);
-        model.memory.get(16).setFloat(8);
+    private void readMemoryFromFile(String filename) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(new File(filename)));
+        for (int i = 0; i < model.memory.size(); i++) {
+            String line = br.readLine();
+            if (line == null) throw new IllegalArgumentException();
+            line = line.trim();
+            model.memory.get(i).setFloat(Float.valueOf(line));
+        }
+    }
+
+    private void saveMemoryToFile(String filename) throws IOException {
+        BufferedWriter br = new BufferedWriter(new FileWriter(new File(filename)));
+        for (int i = 0; i < model.memory.size(); i++) {
+            br.write(model.memory.get(i).getData() + "\n");
+        }
+        br.close();
     }
 
     @FXML
@@ -246,16 +261,19 @@ public class MainController implements Initializable {
         togglePlay();
     }
 
-    @FXML
-    private void openInstruction(ActionEvent event) {
+    @FunctionalInterface
+    public interface CheckedConsumer<T> {
+        void accept(T t) throws IOException, IllegalArgumentException;
+    }
+
+    private void openFileAndDo(CheckedConsumer<File> consumer) {
         Stage stage = (Stage)mainHBox.getScene().getWindow();
         try {
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("请选择指令文件");
+            fileChooser.setTitle("打开文件");
             File file = fileChooser.showOpenDialog(stage);
             if (file != null) {
-                readInstructionsFromFile(file.getPath());
-                start();
+                consumer.accept(file);
             }
         } catch (FileNotFoundException err) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -273,9 +291,50 @@ public class MainController implements Initializable {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("不是有效文件！");
             alert.setHeaderText("加载失败！");
-            alert.setContentText("你的文件好像不是有效指令文件呢。");
+            alert.setContentText("你的文件好像不是有效文件呢。");
             alert.showAndWait();
         }
+    }
+
+    private void saveFileAndDo(CheckedConsumer<File> consumer) {
+        Stage stage = (Stage)mainHBox.getScene().getWindow();
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("保存文件");
+            File file = fileChooser.showSaveDialog(stage);
+            if (file != null) {
+                consumer.accept(file);
+            }
+        } catch (IOException err) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("文件写入失败！");
+            alert.setHeaderText("写入失败！");
+            alert.setContentText("奇怪，你的文件保存不下来。");
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void openInstruction(ActionEvent event) {
+        openFileAndDo((File file) -> {
+            readInstructionsFromFile(file.getPath());
+            start();
+        });
+    }
+
+    @FXML
+    private void openMemory(ActionEvent event) {
+        openFileAndDo((File file) -> {
+            readMemoryFromFile(file.getPath());
+        });
+        update();
+    }
+
+    @FXML
+    private void saveMemory(ActionEvent event) {
+        saveFileAndDo((File file) -> {
+            saveMemoryToFile(file.getPath());
+        });
     }
 
     private void togglePlay() {

@@ -22,6 +22,16 @@
                             <MenuItem mnemonicParsing="false"
                                       onAction="#openInstruction"
                                       text="加载指令" />
+                            <MenuItem fx:id="loadMemoryButton"
+                                      mnemonicParsing="false"
+                                      onAction="#openMemory"
+                                      text="加载内存"
+                                      disable="true"/>
+                            <MenuItem fx:id="saveMemoryButton"
+                                      mnemonicParsing="false"
+                                      onAction="#saveMemory"
+                                      text="储存内存"
+                                      disable="true"/>
                             <MenuItem mnemonicParsing="false" onAction="#close" text="关闭" />
                         </items>
                     </Menu>
