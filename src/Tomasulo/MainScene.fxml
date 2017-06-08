@@ -109,7 +109,7 @@
                  <TableView id="store-table" fx:id="storeStationTable" editable="true" prefHeight="169.0">
                      <columns>
                          <TableColumn text="序号" minWidth="50.0" maxWidth="50.0"/>
-                         <TableColumn text="忙" minWidth="30.0" maxWidth="30.0"/>
+                         <TableColumn text="忙" minWidth="40.0" maxWidth="40.0"/>
                          <TableColumn text="剩余" minWidth="40.0" maxWidth="40.0"/>
                          <TableColumn text="总周期" minWidth="50.0" maxWidth="50.0"/>
                          <TableColumn text="地址" minWidth="70.0"/>
