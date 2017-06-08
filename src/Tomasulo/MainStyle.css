@@ -67,15 +67,24 @@ MenuBar .label {
 }
 
 #mainHBox .table-view .column-header .label {
-    -fx-text-fill: white;
+    -fx-text-fill: #C9C9C9;
     -fx-alignment: center-left;
     -fx-opacity: 1;
 }
 
-#mainHBox .table-view:focused .table-row-cell:filled:focused:selected {
-    -fx-background-color: -fx-focus-color;
+#mainHBox .table-view .table-row-cell:filled:focused:selected,
+#mainHBox .table-view .table-row-cell:selected,
+#mainHBox .table-view:focused .table-row-cell:filled:focused:selected,
+#mainHBox .table-view:focused .table-row-cell:selected {
+    -fx-table-cell-border-color: transparent;
+    -fx-table-header-border-color: transparent;
+    -fx-background-color: #424447;
 }
 
-.highlighted {
-    -fx-background-color: -fx-focus-color;
+#mainHBox .table-view .highlighted {
+    -fx-background-color: -fx-focus-color !important;
+}
+
+#mainHBox .table-view .table-row-cell:selected .text {
+    -fx-fill: white;
 }
